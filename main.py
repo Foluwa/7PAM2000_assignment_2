@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-Created on Mon Dec 12 03:20:25 2023
+Created on Tue Dec 12 03:20:25 2023
 
 @author: Moronfoluwa Akintola
 """
@@ -9,71 +9,64 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter
-from stats import skew, kurtosis
 from bubble_chart import BubbleChart
 
-def convert_csv(filename):
-    """ 
-        Read the CSV file, convert to a dataframe and return the same dataframe 
-    """
-    df = pd.read_csv(filename)
-    return df
+# Declare constant variables
+color_list = ['#5A69AF', '#579E65', '#27C518', '#FC944A', '#022356', '#574B59', '#3CA2CE', '#D9C784', '#1C944A',
+              '#A24C00']
 
-def read_worldbank_data(df):
-    """ 
-        Function which takes a filename as argument, reads a dataframe in World-bank format 
+
+def read_world_bank(filename):
+    """
+        Function which takes a filename as argument, reads a dataframe in World-bank format
         and returns two dataframes: one with years as columns and one with countries as columns
     """
+    df_data = pd.read_csv(filename)
     # Transpose the data
-    df_countries = df.transpose()
+    df_countries_data = df_data.transpose()
 
     # Remove header
-    df_countries.columns = df_countries.iloc[0]
-    df_countries = df_countries.iloc[1:]
+    df_countries_data.columns = df_countries_data.iloc[0]
+    df_countries_data = df_countries_data.iloc[1:]
 
     # replace column headers with the first row:
-    df_countries.columns = df_countries.iloc[0]
-    df_countries = df_countries.iloc[1:]
+    df_countries_data.columns = df_countries_data.iloc[0]
+    df_countries_data = df_countries_data.iloc[1:]
 
     # grab the first row for the header
-    new_header = df_countries.iloc[0] 
+    new_header = df_countries_data.iloc[0]
 
     # take the data less the header row
-    df_countries = df_countries[1:] 
+    df_countries_data = df_countries_data[1:]
 
-    #set the header row as the df header
-    df_countries.columns = new_header 
+    # set the header row as the df header
+    df_countries_data.columns = new_header
 
-    df_countries_cleaned = df_countries.dropna()
-    df_cleaned = df.dropna()
+    df_countries_data_cleaned = df_countries_data.dropna()
+    df_cleaned_data = df_data.dropna()
 
-    return df_cleaned, df_countries
+    return df_cleaned_data, df_countries_data
 
 
-def extract_series(df):
+def extract_series_from_df(df_series, series_name):
     """
         Extract the series name in the dataframe in a list of unique names
     """
-    unique_values = df["Series Name"].unique()
-    items_to_remove = ['Last Updated: 10/26/2023', 'Data from database: World Development Indicators', 'Time required to get electricity (days)' ]
-    unique_values = [item for item in unique_values if item not in items_to_remove]
-    return unique_values
+    # Define the column to extract and the specific value to match
+    column_name = 'Series Name'
+    # Extract the specified values into a new DataFrame
+    extracted_values_df = df_series.loc[df_series[column_name] == series_name]
+    # return the extracted DataFrame
+    return extracted_values_df
 
-def draw_bubble_chart():
+
+def draw_bubble_chart(data):
     """ 
-       
+        Function draws bubble chart from the specified dataframe data
     """
-    browser_market_share = {
-    'browsers': ['United Kingdom', 'United States', 'United Arab Emirates', 'Switzerland', 'India', 'Indonesia', 'Algeria', 'Australia', 'Nigeria', 'Ghana'],
-    'market_share': [5130.3902533002, 12993.9655794706, 11562.9885226842, 7520.16602494502,797.349232010839, 808.418972064685, 1368.62151887474, 10071.3989785006,142.129222071326, 339.19274255207],
-    'color': ['#5A69AF', '#579E65', '#27C518', '#FC944A', '#022356', '#574B59', '#3CA2CE',  '#D9C784', '#1C944A', '#A24C00',]
-    }
-
 
     # Create an instance of BubbleChart
-    bubble_chart = BubbleChart(area=browser_market_share['market_share'],
-                            bubble_spacing=0.1)
+    bubble_chart = BubbleChart(area=data['values'], bubble_spacing=0.1)
 
     # Collapse the bubbles
     bubble_chart.collapse()
@@ -82,32 +75,135 @@ def draw_bubble_chart():
     fig, ax = plt.subplots(figsize=(18, 18), subplot_kw=dict(aspect="equal"))
 
     # Plot the bubble chart with labels and legend
-    bubble_chart.plot(ax, browser_market_share['browsers'], browser_market_share['color'])
+    bubble_chart.plot(ax, data['countries'], data['color'])
 
     # Customize the plot
     ax.axis("off")
     ax.relim()
     ax.autoscale_view()
-    ax.set_title('Electric power consumption (kWh per capita) in year 2014')
+    ax.set_title(f'Electric power consumption (kWh per capita) in year {data["year"]}')
 
     # Show the legend outside the plot area
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     return plt.show()
 
-def extract_country_from_df(df, country_name): 
-    """ Extract data matching specific country """
+
+def extract_country_from_df(df_data, country_name):
+    """
+        Function take dataframe and country name as argument
+        and extracts the specified series data
+    """
     # Define the column to extract and the specific value to match
     column_name = 'Country Name'
     # Extract the specified values into a new DataFrame
-    extracted_values_df = df.loc[df[column_name] == country_name]
+    extracted_values_df = df_data.loc[df_data[column_name] == country_name]
     # return the extracted DataFrame
     return extracted_values_df
 
-def draw_line_chart(df, series_name, plot_title, y_axis_label):
-    """ Draw Line chart """
+
+def extract_countries_series(df_country, series_name):
+    """
+        Function take dataframe and series name as argument
+        and extracts the specified country data
+    """
+    all_country = df_country['Country Name'].values
+    all_values = df_country[series_name].values
+    return all_country, all_values
+
+
+def truncate_legend_text(text, max_length=30):
+    """
+        Function truncate the length of text on the matplotlib legend
+    """
+    return text[:max_length] + "..." if len(text) > max_length else text
+
+
+def draw_grouped_bar_chart(df_bar, year):
+    """
+        Function draws a grouped bar chart from the data frame and selected year
+    """
+    # Select relevant data for the specified series and years
+    selected_series = [
+        "Electric power consumption (kWh per capita)",
+        "CO2 emissions (metric tons per capita)",
+        "CO2 emissions from electricity and heat production, total (% of total fuel combustion)",
+        "Electricity production from natural gas sources (% of total)",
+        "GDP per capita (current US$)",
+        "Electricity production from renewable sources, excluding hydroelectric (% of total)"
+    ]
+
+    # Selected Year
+    years = [f"{year} [YR{year}]"]
+    selected_data = df_bar[df_bar["Series Name"].isin(selected_series) &
+                           df_bar["Country Code"].notna()][["Series Name", "Country Name"] + years]
+
+    # Pivot the data for easier plotting
+    pivot_data = selected_data.melt(id_vars=["Series Name", "Country Name"], var_name="Year", value_name="Value")
+    # print('pivot_data', pivot_data)
+
+    # Extract years from the "Year" column
+    pivot_data["Year"] = pivot_data["Year"].str.extract(r"(\d{4})").astype(int)
+
+    # Plot grouped bar chart with logarithmic y-axis scale
+    fig, ax = plt.subplots(figsize=(12, 8))
+    pivot_data.pivot(index=["Country Name", "Year"], 
+                     columns="Series Name", 
+                     values="Value").unstack().plot(kind="bar", ax=ax, width=0.8, logy=True)
+
+    # Set labels and title
+    plt.xlabel("Countries")
+    plt.ylabel("Value (log scale)")
+    plt.title(f"Comparison of Key Indicators Across Countries ({year})")
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha="right")
+
+    # Add legend with truncated series names in the top right corner
+    legend_labels = [truncate_legend_text(series) for series in selected_series]
+    plt.legend(title="", labels=legend_labels, bbox_to_anchor=(1, 1), loc="upper right")
+
+    # Show the plot
+    plt.tight_layout()
+    return plt.show()
+
+
+def draw_correlation():
+    """
+        Function draws a correlation matrix from the selected country dataframe
+    """
+    df_selected_country = pd.read_csv('df_selected_country.csv', index_col=0)
+
+    #  Series parameters  
+    cols = ['Electric power consumption (kWh per capita)',
+            'CO2 emissions (metric tons per capita)',
+            'CO2 emissions from electricity and heat production, total (% of total fuel combustion)',
+            'Electricity production from natural gas sources (% of total)',
+            'Electricity production from renewable sources, excluding hydroelectric (% of total)',
+            'GDP per capita (current US$)'
+    ]
+
+    df_selected_country = df_selected_country.loc[cols, '2000 [YR2000]':'2005 [YR2005]']
+    corr = df_selected_country.corr()
+    plt.subplots(figsize=(6, 5))
+    sns.heatmap(corr,
+                annot=True,
+                vmin=-1, vmax=1,
+                xticklabels=cols,
+                yticklabels=cols,
+                cmap='BrBG',
+                linewidths=.5)
+    cor_title = 'United Kingdom 2000-2005 coefficients related to electric power consumption and CO2 emissions'
+    plt.title(cor_title)
+    plt.tight_layout()
+    return plt.show()
+
+
+def draw_line_chart(df_chart, series_name, title, y_axis):
+    """ Function take dataframe series name and title as argument
+        and draws a linechart from the data
+    """
     # Select data for the specified series name
-    series_name = 'Electric power consumption (kWh per capita)'
-    selected_data = df[df['Series Name'] == series_name]
+    selected_data = df_chart[df_chart['Series Name'] == series_name]
 
     # Replace non-numeric values with NaN
     selected_data.replace('..', np.nan, inplace=True)
@@ -129,136 +225,79 @@ def draw_line_chart(df, series_name, plot_title, y_axis_label):
         plt.plot(years, values.iloc[i, :], marker='o', label=countries.iloc[i], color=color, linewidth=2)
 
     # Customize the plot
-    # plt.title('Electric Power Consumption (kWh per capita) - 2000 to 2015')
-    plt.title(plot_title)
+    plt.title(title)
     plt.xlabel('Year')
-    # plt.ylabel('Electric Power Consumption (kWh per capita)')
-    plt.ylabel(y_axis_label)
+    plt.ylabel(y_axis)
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-
     # Show the plot
-    return plt.show()
-
-
-""" Function to truncate legend text """
-def truncate_legend_text(text, max_length=30):
-        return text[:max_length] + "..." if len(text) > max_length else text
-    
-
-def draw_grouped_bar_chart(dffff, year):
-    # print('dffff', dffff)
-    print('year', year)
-    """ Draw grouped barchart """
-    # Select relevant data for the specified series and years
-    selected_series = [
-        "Electric power consumption (kWh per capita)",
-        "CO2 emissions (metric tons per capita)",
-        "CO2 emissions from electricity and heat production, total (% of total fuel combustion)",
-        "Electricity production from natural gas sources (% of total)",
-        "GDP per capita (current US$)",
-        "Electricity production from renewable sources, excluding hydroelectric (% of total)"
-    ]
-
-    # Selected Year
-    years = [f"{year} [YR{year}]"]
-    selected_data = dffff[dffff["Series Name"].isin(selected_series) & dffff["Country Code"].notna()][["Series Name", "Country Name"] + years]
-
-    print('years', years)
-
-    # Pivot the data for easier plotting
-    pivot_data = selected_data.melt(id_vars=["Series Name", "Country Name"], var_name="Year", value_name="Value")
-    print('pivot_data', pivot_data)
-
-    # Extract years from the "Year" column
-    pivot_data["Year"] = pivot_data["Year"].str.extract(r"(\d{4})").astype(int)
-
-    # Plot grouped bar chart with logarithmic y-axis scale
-    fig, ax = plt.subplots(figsize=(12, 8))
-    pivot_data.pivot(index=["Country Name", "Year"], columns="Series Name", values="Value").unstack().plot(kind="bar", ax=ax, width=0.8, logy=True)
-
-    # Set labels and title
-    plt.xlabel("Countries")
-    plt.ylabel("Value (log scale)")
-    plt.title(f"Comparison of Key Indicators Across Countries ({year})")
-
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45, ha="right")
-
-    # Add legend with truncated series names on the top right corner
-    legend_labels = [truncate_legend_text(series) for series in selected_series]
-    plt.legend(title="", labels=legend_labels, bbox_to_anchor=(1, 1), loc="upper right")
-
-    # Show the plot
-    plt.tight_layout()
-    plt.show()
-    return #plt.show()
-
-
-def draw_correlation(df):
-
-    cols = ['Electric power consumption (kWh per capita)',
-        'CO2 emissions (metric tons per capita)',
-        'CO2 emissions from electricity and heat production, total (% of total fuel combustion)',
-        'Electricity production from natural gas sources (% of total)',
-        'Electricity production from renewable sources, excluding hydroelectric (% of total)',
-        'GDP per capita (current US$)'
-        ]
-
-    df = df.loc[cols, '2000 [YR2000]':'2005 [YR2005]']
-
-    corr = df.corr()
-
-    fig, ax = plt.subplots(figsize=(6, 5))
-
-    sns.heatmap(corr,
-                annot=True,
-                vmin=-1, vmax=1,
-                xticklabels=cols,
-                yticklabels=cols,
-                cmap='BrBG',
-                linewidths=.5)
-
-    plt.title('United Kingdom 2000-2005 coefficients related to electric power consumption and CO2 emissions', fontsize=20)
-    plt.tight_layout()
-    plt.show()
     return plt.show()
 
 
 # checks whether module is imported or run directly.
 # code is not executed if imported
 if __name__ == "__main__":
-    
-    # Load data into pandas dataframe from CSV file
-    df = convert_csv('./data.csv')
-    df.head()
 
+    # Function takes a filename of CSV file as argument, reads a dataframe in
+    # World bank format and returns two dataframes: one with years as columns and one with
+    # countries as columns.
+    df_cleaned, df_countries = read_world_bank('./data.csv')
+    numeric_cols = ['2000 [YR2000]', '2014 [YR2014]']
 
-    # Your program should
-    df_cleaned, df_countries = read_worldbank_data(df)
+    # Use of dataframe method .describe() to explore dataset.
+    summary_statistics = df_cleaned.describe()
+    # # Other statistical methods
+    data_mean = df_cleaned[numeric_cols].mean()
+    correlation_matrix = df_cleaned[numeric_cols].corr()
+    skewness = df_cleaned[numeric_cols].skew()
 
-    draw_correlation(df_countries)
+    # Display the results
+    print('Summary Statistics:\n', summary_statistics)
+    print('Mean of data :\n', data_mean)
+    print('\nCorrelation Matrix:\n', correlation_matrix)
+    print('\nSkewness of the data:\n', skewness)
 
-    # draw_grouped_bar_chart(df_cleaned, 2014)
+    country_df = extract_country_from_df(df_cleaned, 'United Kingdom')
+
+    # Save country to CSV
+    country_df.to_csv('df_selected_country.csv', index=False)
+
+    # Draw correlation from selected country
+    draw_correlation()
 
     # Bubble chart
-    # draw_bubble_chart()
+    selected_series_electric_power = extract_series_from_df(df_cleaned, 'Electric power consumption (kWh per capita)')
 
-    # country_df = extract_country_from_df(df,'United Kingdom')
+    countries_2000, values_2000 = extract_countries_series(selected_series_electric_power, '2000 [YR2000]')
+    countries_2014, values_2024 = extract_countries_series(selected_series_electric_power, '2014 [YR2014]')
 
-    # Line chart Electric power consumption (kWh per capita)
-    series_name = 'Electric power consumption (kWh per capita)'
-    plot_title = 'Electric Power Consumption (kWh per capita) - 2000 to 2015'
-    y_axis_label = 'Electric Power Consumption (kWh per capita)'
-    # draw_line_chart(df, series_name, plot_title, y_axis_label)
-    
-    # Line chart CO2 emissions (metric tons per capita)
-    # series_name = 'Electric power consumption (kWh per capita)'
-    # plot_title = 'Electric Power Consumption (kWh per capita) - 2000 to 2015'
-    # y_axis_label = 'Electric Power Consumption (kWh per capita)'
+    market_1 = {
+        'countries': countries_2000,
+        'values': values_2000,
+        'color': color_list,
+        'year': '2000'
+    }
 
+    market_2 = {
+        'countries': countries_2014,
+        'values': values_2024,
+        'color': color_list,
+        'year': '2014'
+    }
 
- 
+    draw_bubble_chart(market_1)
+    draw_bubble_chart(market_2)
 
-    
+    # grouped bar chart
+    draw_grouped_bar_chart(df_cleaned, 2000)
+    draw_grouped_bar_chart(df_cleaned, 2014)
 
-    
+    selected_series_co2_emissions = extract_series_from_df(df_cleaned, 'CO2 emissions (metric tons per capita)')
+
+    # print(selected_series_co2_emissions.head())
+
+    draw_line_chart(selected_series_electric_power, 'Electric power consumption (kWh per capita)',
+                    'Electric Power Consumption (kWh per capita) - 2000 to 2015',
+                    'Electric Power Consumption (kWh per capita)')
+
+    draw_line_chart(selected_series_co2_emissions, 'CO2 emissions (metric tons per capita)',
+                    'CO2 emissions (metric tons per capita) - 2000 to 2015', 'CO2 emissions (metric tons per capita)')
