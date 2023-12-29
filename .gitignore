@@ -1,7 +1,6 @@
 .idea
 data/
 assignment2
-*.csv
 *.png
 *.zip
 TODO.md
